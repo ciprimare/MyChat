@@ -11,7 +11,6 @@ public class Server {
     private int uniqueId;
     public static List<ClientConnection> allConnectedClients;
     private int port;
-    private boolean keepAlive;
     private ServerSocket serverSocket;
 
     public Server(int port) {
@@ -20,22 +19,15 @@ public class Server {
     }
 
     public void start() {
-        keepAlive = true;
 
         try {
             serverSocket = new ServerSocket(port);
-            while (keepAlive) {
+            while (true) {
                 System.out.println("Chat Server waiting for clients on port [" + port + "]");
                 Socket newConnection = serverSocket.accept();
-                if (!keepAlive) {
-                    System.out.println("Chat server stopped.");
-                    break;
-                }
-
                 ClientConnection client = new ClientConnection(newConnection, ++uniqueId);
                 allConnectedClients.add(client);
                 client.start();
-                client.join();
             }
 
             //TODO move the below code into a finally{} block, othervise if an IOEXception
@@ -51,22 +43,30 @@ public class Server {
             // wait for them to finish before letting the main thread end and causing the process
             // to be flushed from memory before client threads finish.
 
-        } catch (InterruptedException e) {
-            keepAlive = false;
-            System.out.println(e.getMessage());
         } catch (IOException e) {
-            keepAlive = false;
             System.out.println(e.getMessage());
+            close();
         } finally {
+            close();
+        }
+    }
+
+    private void close() {
+        if (!serverSocket.isClosed()) {
+//            for (ClientConnection client : allConnectedClients) {
+//                try {
+//                    client.join();
+//                } catch (InterruptedException e) {
+//                    System.out.println(e.getMessage());
+//                }
+//            }
             try {
                 serverSocket.close();
+                System.out.println("Chat server stopped.");
             } catch (IOException e) {
-                keepAlive = false;
                 System.out.println(e.getMessage());
             }
-            for (ClientConnection client : allConnectedClients) {
-                client.close();
-            }
+
         }
     }
 }

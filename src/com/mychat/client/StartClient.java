@@ -1,8 +1,7 @@
 package com.mychat.client;
 
 
-import com.mychat.server.ChatMessage;
-import com.mychat.server.Op;
+import org.json.simple.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,8 +18,12 @@ public class StartClient {
         String hostname = args[1];
         int port = Integer.parseInt(args[2]);
 
-        Client client = new Client(username, hostname, port);
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("username", username);
+
+        Client client = new Client(hostname, port);
         client.start();
+        client.sendMessage(jsonObject);
 
         BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
         boolean keepAlive = true;
@@ -30,13 +33,18 @@ public class StartClient {
                 System.out.print("CHAT ROOM:");
                 String message = stdIn.readLine();
                 if (message.equalsIgnoreCase("LOGOUT")) {
-                    client.sendMessage(new ChatMessage(Op.LOGOUT, ""));
-                    break;
+                    jsonObject = new JSONObject();
+                    jsonObject.put("type", 1);
+                    client.sendMessage(jsonObject);
                 } else {
-                    client.sendMessage(new ChatMessage(Op.MESSAGE, message));
+                    jsonObject = new JSONObject();
+                    jsonObject.put("type", 0);
+                    jsonObject.put("message", message);
+                    client.sendMessage(jsonObject);
                 }
             } catch (IOException e) {
-                //reading line exception
+                System.out.println(e.getMessage());
+                break;
             }
         }
         client.disconnect();
