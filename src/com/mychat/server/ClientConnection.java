@@ -5,7 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-public class ClientThread extends Thread {
+public class ClientConnection extends Thread {
 
     private Socket conn;
     private ObjectOutputStream oos;
@@ -13,13 +13,14 @@ public class ClientThread extends Thread {
     private int connId;
     private String username;
     private ChatMessage chatMessage;
-    private String date;
+    private boolean keepAlive;
 
     //TODO maybe rename this class to something like client connection because it may be confusing,
     // it does not represent a client but the server side end of a client communications pipe
 
-    public ClientThread(final Socket conn) {
+    public ClientConnection(final Socket conn, final int connId) {
         this.conn = conn;
+        this.connId = connId;
 
         try {
             oos = new ObjectOutputStream(conn.getOutputStream());
@@ -28,20 +29,20 @@ public class ClientThread extends Thread {
             //TODO this introduces a high coupling between client and server, server needs to know about client but not vice versa.
             // the connection ID could just as easily have been passed as a constructor parameter
 
-            connId = ++Server.uniqueId;
             username = (String) ois.readObject();
             writeMessage(username + " just connected.");
         } catch (IOException e) {
-            //exception creating object input and output streams
+            System.out.println(e.getMessage());
             return;
         } catch (ClassNotFoundException e) {
-            //class not found exceptions
+            System.out.println(e.getMessage());
+            return;
         }
     }
 
     @Override
     public void run() {
-        boolean keepAlive = true;
+        keepAlive = true;
 
         //TODO you just keep trying to read forever from a client connection that may have been force closed already
         // you should handle not just the happy flow where client disconnects with LOGOUT,
@@ -55,12 +56,16 @@ public class ClientThread extends Thread {
                 // these are things you need to consider in real life scenarios and implement something a bit
                 // more flexible like a JSON , XML or other standard based communication
 
+                if (!keepAlive){
+                    break;
+                }
+
                 chatMessage = (ChatMessage) ois.readObject();
             } catch (ClassNotFoundException e) {
-                //class not found exception
+                System.out.println(e.getMessage());
                 break;
             } catch (IOException e) {
-                //exception reading streams
+                System.out.println(e.getMessage());
                 break;
             }
 
@@ -95,7 +100,7 @@ public class ClientThread extends Thread {
         }
         // write the message to the stream
         try {
-            for (ClientThread client : Server.allConnectedClients) {
+            for (ClientConnection client : Server.allConnectedClients) {
                 if (client != this) {
                     client.oos.writeObject(message);
                 }
@@ -114,7 +119,7 @@ public class ClientThread extends Thread {
         // communication events from the clients and have the Server do the removing of the client as needed
         // this is called DEPENDENCY INVERSION and it is an important concept of SOLID architectures
 
-        for (ClientThread client : Server.allConnectedClients) {
+        for (ClientConnection client : Server.allConnectedClients) {
             // found it
 
             //TODO why are you testing against ID equality, can you not use instance equality and just do
@@ -133,43 +138,30 @@ public class ClientThread extends Thread {
 
     //TODO i see you have delegated the closing to this class but you are not using it in the Server implementation
 
-    private void close() {
+    public void close() {
+        try {
+            ois.close();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            keepAlive = false;
+        }
         try {
             oos.close();
-            ois.close();
-            conn.close();
         } catch (IOException e) {
-            // exception closing streams and connection
+            System.out.println(e.getMessage());
+            keepAlive = false;
+        }
+        try {
+            ois.close();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            keepAlive = false;
         }
     }
 
     //TODO some of these getters are not necesarry, this is not a java Bean class after all
 
-    public Socket getConn() {
-        return conn;
-    }
-
-    public ObjectOutputStream getOos() {
-        return oos;
-    }
-
-    public ObjectInputStream getOis() {
-        return ois;
-    }
-
     public int getConnId() {
         return connId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public ChatMessage getChatMessage() {
-        return chatMessage;
-    }
-
-    public String getDate() {
-        return date;
     }
 }

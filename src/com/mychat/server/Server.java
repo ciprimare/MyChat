@@ -8,22 +8,22 @@ import java.util.List;
 
 public class Server {
 
-    public static int uniqueId;
-    public static List<ClientThread> allConnectedClients;
+    private int uniqueId;
+    public static List<ClientConnection> allConnectedClients;
     private int port;
     private boolean keepAlive;
-
+    private ServerSocket serverSocket;
 
     public Server(int port) {
         this.port = port;
-        allConnectedClients = new ArrayList<ClientThread>();
+        allConnectedClients = new ArrayList<ClientConnection>();
     }
 
     public void start() {
         keepAlive = true;
-        try {
-            ServerSocket serverSocket = new ServerSocket(port);
 
+        try {
+            serverSocket = new ServerSocket(port);
             while (keepAlive) {
                 System.out.println("Chat Server waiting for clients on port [" + port + "]");
                 Socket newConnection = serverSocket.accept();
@@ -32,9 +32,10 @@ public class Server {
                     break;
                 }
 
-                ClientThread client = new ClientThread(newConnection);
+                ClientConnection client = new ClientConnection(newConnection, ++uniqueId);
                 allConnectedClients.add(client);
                 client.start();
+                client.join();
             }
 
             //TODO move the below code into a finally{} block, othervise if an IOEXception
@@ -49,18 +50,23 @@ public class Server {
             //TODO since the clients are all threads, you may want to Join to the client threads and
             // wait for them to finish before letting the main thread end and causing the process
             // to be flushed from memory before client threads finish.
+
+        } catch (InterruptedException e) {
+            keepAlive = false;
+            System.out.println(e.getMessage());
+        } catch (IOException e) {
+            keepAlive = false;
+            System.out.println(e.getMessage());
+        } finally {
             try {
                 serverSocket.close();
-                for (ClientThread client : allConnectedClients) {
-                    client.getConn().close();
-                    client.getOis().close();
-                    client.getOos().close();
-                }
             } catch (IOException e) {
-                //server socket and clients closing exception
+                keepAlive = false;
+                System.out.println(e.getMessage());
             }
-        } catch (IOException e) {
-            //server socket exception
+            for (ClientConnection client : allConnectedClients) {
+                client.close();
+            }
         }
     }
 }
