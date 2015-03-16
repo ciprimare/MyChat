@@ -26,8 +26,7 @@ public class StartClient {
         client.sendMessage(jsonObject);
 
         BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-        boolean keepAlive = true;
-        while (keepAlive) {
+        while (true) {
 
             try {
                 System.out.print("CHAT ROOM:");
@@ -36,6 +35,7 @@ public class StartClient {
                     jsonObject = new JSONObject();
                     jsonObject.put("type", 1);
                     client.sendMessage(jsonObject);
+                    break;
                 } else {
                     jsonObject = new JSONObject();
                     jsonObject.put("type", 0);
@@ -47,6 +47,6 @@ public class StartClient {
                 break;
             }
         }
-        client.disconnect();
+        client.close();
     }
 }

@@ -8,7 +8,6 @@ import java.io.ObjectInputStream;
 public class ListenFromServer extends Thread {
 
     private BufferedReader ois;
-    private boolean keepAlive;
 
     ListenFromServer(final BufferedReader ois){
         this.ois = ois;
@@ -16,8 +15,7 @@ public class ListenFromServer extends Thread {
 
     @Override
     public void run() {
-        keepAlive = true;
-        while (keepAlive) {
+        while (true) {
             try {
                 String msg =  ois.readLine();
                 System.out.println(msg);

@@ -26,13 +26,13 @@ public class Client {
         try {
             conn = new Socket(hostname, port);
             System.out.println("Connection accepted on " + hostname + " and port " + port);
-            oos = new PrintWriter(conn.getOutputStream(),true);
+            oos = new PrintWriter(conn.getOutputStream(), true);
             ois = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
-            new ListenFromServer(ois).start();
+            ListenFromServer listenFromServer = new ListenFromServer(ois);
+            listenFromServer.start();
         } catch (IOException e) {
             System.out.println(e.getMessage());
-            disconnect();
             return;
         }
 
@@ -42,19 +42,24 @@ public class Client {
         oos.println(jsonObject.toJSONString());
     }
 
-    public void disconnect() {
-        try {
-            conn.close();
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+    public void close() {
+        if (ois != null) {
+            try {
+                ois.close();
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
         }
-        try {
-            ois.close();
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+        if (oos != null) {
+            oos.close();
         }
-        oos.close();
-
+        if (conn.isConnected()) {
+            try {
+                conn.close();
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        }
     }
 
 
