@@ -37,6 +37,18 @@ public class Server {
                 client.start();
             }
 
+            //TODO move the below code into a finally{} block, othervise if an IOEXception
+            // occurs while accepting connections the closing of the socket will not take place
+
+            //TODO closing the server socket, and each ONE of the client sockets should be in separate
+            // try blocks, otherwise an error in closing one would skip the closing of the others
+
+            //TODO also you should delegate the closing of the client streams to the client object itself
+            // to have good encapsulation
+
+            //TODO since the clients are all threads, you may want to Join to the client threads and
+            // wait for them to finish before letting the main thread end and causing the process
+            // to be flushed from memory before client threads finish.
             try {
                 serverSocket.close();
                 for (ClientThread client : allConnectedClients) {
@@ -51,7 +63,4 @@ public class Server {
             //server socket exception
         }
     }
-
-
-
 }
