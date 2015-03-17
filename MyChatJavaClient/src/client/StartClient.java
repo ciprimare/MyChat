@@ -1,4 +1,4 @@
-package com.mychat.client;
+package client;
 
 
 import org.json.simple.JSONObject;

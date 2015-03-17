@@ -1,9 +1,8 @@
-package com.mychat.client;
+package client;
 
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 
 public class ListenFromServer extends Thread {
 
