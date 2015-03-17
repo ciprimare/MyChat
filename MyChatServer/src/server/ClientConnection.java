@@ -49,7 +49,7 @@ public class ClientConnection extends Thread {
         //TODO you just keep trying to read forever from a client connection that may have been force closed already
         // you should handle not just the happy flow where client disconnects with LOGOUT,
         // but also the error case where the connection gets broken
-        dispatchMessageToAllClients(username + " just connected.");
+        dispatchPublicMessage(username + " just connected.");
 
         while (true) {
             try {
@@ -66,20 +66,29 @@ public class ClientConnection extends Thread {
                 break;
             }
 
+
             int type = Integer.parseInt(inputData.get("type").toString());
             if (type == 1) {
                 String msg = username + " disconnected with a LOGOUT message";
                 System.out.println(msg);
-                dispatchMessageToAllClients(msg);
+                dispatchPublicMessage(msg);
                 break;
             } else {
                 String message = inputData.get("message").toString();
-                dispatchMessageToAllClients(message);
+                dispatchPublicMessage(message);
             }
         }
 
-        close();
+        try {
+            close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         dispatchClientDisconnected();
+    }
+
+    public void sendMessage(String message){
+        oos.println(message);
     }
 
     //Done
@@ -89,28 +98,8 @@ public class ClientConnection extends Thread {
     //Done
     //TODO i see you have delegated the closing to this class but you are not using it in the Server implementation
 
-    private void close() {
-        if (oos != null) {
-            oos.close();
-        }
-        try {
-            if ((ois != null) && (!ois.ready())) {
-                try {
-                    ois.close();
-                } catch (IOException e) {
-                    System.out.println(e.getMessage());
-                }
-            }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-        if (conn.isConnected()) {
-            try {
-                conn.close();
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        }
+    private void close() throws IOException {
+        conn.close();
     }
 
     private JSONObject parseJSON(String jsonString) {
@@ -124,9 +113,9 @@ public class ClientConnection extends Thread {
         return result;
     }
 
-    private void dispatchMessageToAllClients(final String message) {
+    private void dispatchPublicMessage(final String message) {
         if (listener != null) {
-            listener.onPublicMessageListener(message);
+            listener.onDispatchPublicMessage(message);
         }
     }
 
@@ -143,12 +132,9 @@ public class ClientConnection extends Thread {
     public interface ClientConnectionListener {
         public void onClientDisconnected(ClientConnection clientConnection);
 
-        public void onPublicMessageListener(String message);
+        public void onDispatchPublicMessage(String message);
     }
 
     //Done
     //TODO some of these getters are not necesarry, this is not a java Bean class after all
-    public PrintWriter getOos() {
-        return oos;
-    }
 }

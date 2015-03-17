@@ -5,36 +5,31 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class Server implements ClientConnection.ClientConnectionListener {
 
     private List<ClientConnection> allConnectedClients;
     private int port;
     private ServerSocket serverSocket;
-    private BlockingQueue<String> messageQueue;
+    private BlockingDeque<String> messageQueue;
     private Thread messageSenderThread;
 
     public Server(int port) {
         this.port = port;
         allConnectedClients = new ArrayList<ClientConnection>();
-        messageQueue = new ArrayBlockingQueue<String>(1024);
-        messageSenderThread = new Thread() {
-            public void run() {
-                sendMessageToAll();
-            }
-        };
+        messageQueue = new LinkedBlockingDeque<String>();
     }
 
     public void start() {
 
         try {
             serverSocket = new ServerSocket(port);
-            messageSenderThread.start();
+            System.out.println("Chat Server waiting for clients on port [" + port + "]");
             while (true) {
-                System.out.println("Chat Server waiting for clients on port [" + port + "]");
                 Socket newConnection = serverSocket.accept();
+                System.out.println("New client: " + newConnection.getInetAddress());
                 ClientConnection client = new ClientConnection(newConnection);
                 client.setClientConnectionListener(this);
                 allConnectedClients.add(client);
@@ -59,9 +54,7 @@ public class Server implements ClientConnection.ClientConnectionListener {
             // to be flushed from memory before client threads finish.
 
         } catch (IOException e) {
-            System.out.println(e.getMessage());
-            close();
-        } finally {
+            e.printStackTrace();
             close();
         }
     }
@@ -91,16 +84,15 @@ public class Server implements ClientConnection.ClientConnectionListener {
     }
 
     @Override
-    public void onPublicMessageListener(String message) {
+    public void onDispatchPublicMessage(String message) {
         try {
             messageQueue.put(message);
-            if(messageSenderThread.isAlive()) {
-                messageSenderThread.run();
-            }else{
+            if (messageSenderThread == null) {
+                messageSenderThread = new Thread(new SenderRunnable());
                 messageSenderThread.start();
             }
         } catch (InterruptedException e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -116,15 +108,25 @@ public class Server implements ClientConnection.ClientConnectionListener {
         System.out.println("client removed from connected clients list");
     }
 
-    private void sendMessageToAll() {
-        try {
-            String message = messageQueue.take();
-            messageQueue.remove(message);
-            for (ClientConnection clientConnection : allConnectedClients) {
-                clientConnection.getOos().println(message);
+    private class SenderRunnable implements Runnable{
+
+        @Override
+        public void run() {
+            while (true) {
+                sendMessageToAll();
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        }
+
+        private void sendMessageToAll() {
+            try {
+                String message = messageQueue.take();
+                for (ClientConnection clientConnection : allConnectedClients) {
+                    clientConnection.sendMessage(message);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
+
 }
