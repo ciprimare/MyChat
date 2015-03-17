@@ -14,7 +14,7 @@ public class Server implements ClientConnection.ClientConnectionListener {
     private int port;
     private ServerSocket serverSocket;
     private BlockingDeque<String> messageQueue;
-    private Thread messageSenderThread;
+    private Thread publicMessageSenderThread;
 
     public Server(int port) {
         this.port = port;
@@ -87,9 +87,9 @@ public class Server implements ClientConnection.ClientConnectionListener {
     public void onDispatchPublicMessage(String message) {
         try {
             messageQueue.put(message);
-            if (messageSenderThread == null) {
-                messageSenderThread = new Thread(new SenderRunnable());
-                messageSenderThread.start();
+            if (publicMessageSenderThread == null) {
+                publicMessageSenderThread = new Thread(new PublicMessageSender());
+                publicMessageSenderThread.start();
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -108,16 +108,16 @@ public class Server implements ClientConnection.ClientConnectionListener {
         System.out.println("client removed from connected clients list");
     }
 
-    private class SenderRunnable implements Runnable{
+    private class PublicMessageSender implements Runnable{
 
         @Override
         public void run() {
             while (true) {
-                sendMessageToAll();
+                sendPublicMessages();
             }
         }
 
-        private void sendMessageToAll() {
+        private void sendPublicMessages() {
             try {
                 String message = messageQueue.take();
                 for (ClientConnection clientConnection : allConnectedClients) {
