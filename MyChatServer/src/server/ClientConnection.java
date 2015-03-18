@@ -35,8 +35,8 @@ public class ClientConnection extends Thread {
             //TODO this introduces a high coupling between client and server, server needs to know about client but not vice versa.
             // the connection ID could just as easily have been passed as a constructor parameter
 
-            inputData = parseJSON(ois.readLine());
-            username = inputData.get("username").toString();
+            //inputData = parseJSON(ois.readLine());
+            //username = inputData.get("username").toString();
         } catch (IOException e) {
             System.out.println(e.getMessage());
             return;
@@ -49,7 +49,8 @@ public class ClientConnection extends Thread {
         //TODO you just keep trying to read forever from a client connection that may have been force closed already
         // you should handle not just the happy flow where client disconnects with LOGOUT,
         // but also the error case where the connection gets broken
-        dispatchPublicMessage(username + " just connected.");
+
+        //dispatchPublicMessage(username + " just connected.");
 
         while (true) {
             try {
@@ -66,17 +67,30 @@ public class ClientConnection extends Thread {
                 break;
             }
 
+            if (inputData.containsKey("msgType")) {
+                int messageType = Integer.parseInt(inputData.get("msgType").toString());
+                switch (messageType) {
+                    case 1:
+                        if(inputData.containsKey("msgContent") && inputData.get("msgContent") instanceof  String){
+                            System.out.println(inputData.get("msgContent").toString());
+                        }
 
-            int type = Integer.parseInt(inputData.get("type").toString());
-            if (type == 1) {
-                String msg = username + " disconnected with a LOGOUT message";
-                System.out.println(msg);
-                dispatchPublicMessage(msg);
-                break;
-            } else {
-                String message = inputData.get("message").toString();
-                dispatchPublicMessage(message);
+                        break;
+                }
             }
+
+//            if (inputData.get("type") != null) {
+//                int type = Integer.parseInt(inputData.get("type").toString());
+//                if (type == 1) {
+//                    String msg = username + " disconnected with a LOGOUT message";
+//                    System.out.println(msg);
+//                    dispatchPublicMessage(msg);
+//                    break;
+//                } else {
+//                    String message = inputData.get("message").toString();
+//                    dispatchPublicMessage(message);
+//                }
+//            }
         }
 
         try {
@@ -87,7 +101,7 @@ public class ClientConnection extends Thread {
         dispatchClientDisconnected();
     }
 
-    public void sendMessage(String message){
+    public void sendMessage(String message) {
         oos.println(message);
     }
 
@@ -104,11 +118,13 @@ public class ClientConnection extends Thread {
 
     private JSONObject parseJSON(String jsonString) {
         JSONParser parser = new JSONParser();
-        JSONObject result = null;
-        try {
-            result = (JSONObject) parser.parse(jsonString);
-        } catch (ParseException e) {
-            System.out.println(e.getMessage());
+        JSONObject result = new JSONObject();
+        if (jsonString != null && !jsonString.isEmpty()) {
+            try {
+                result = (JSONObject) parser.parse(jsonString);
+            } catch (ParseException e) {
+                System.out.println(e.getMessage());
+            }
         }
         return result;
     }
