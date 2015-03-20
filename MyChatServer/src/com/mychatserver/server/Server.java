@@ -1,4 +1,4 @@
-package server;
+package com.mychatserver.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -26,7 +26,7 @@ public class Server implements ClientConnection.ClientConnectionListener {
 
         try {
             serverSocket = new ServerSocket(port);
-            System.out.println("Chat Server waiting for clients on port [" + port + "]");
+            System.out.println("Chat com.mychatserver.server.Server waiting for clients on port [" + port + "]");
             while (true) {
                 Socket newConnection = serverSocket.accept();
                 System.out.println("New client: " + newConnection.getInetAddress());
@@ -102,7 +102,7 @@ public class Server implements ClientConnection.ClientConnectionListener {
         //Done
         //TODO this is another cross dependency introduced between server and client, to not do
         // this you may want to implement and observer pattern to have the server listen for end of
-        // communication events from the clients and have the Server do the removing of the client as needed
+        // communication events from the clients and have the com.mychatserver.server.Server do the removing of the client as needed
         // this is called DEPENDENCY INVERSION and it is an important concept of SOLID architectures
         allConnectedClients.remove(clientConnection);
         System.out.println("client removed from connected clients list");

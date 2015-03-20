@@ -1,5 +1,7 @@
-package server;
+package com.mychatserver.server;
 
+import com.mychatserver.db.UserDao;
+import com.mychatserver.entity.User;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -71,26 +73,14 @@ public class ClientConnection extends Thread {
                 int messageType = Integer.parseInt(inputData.get("msgType").toString());
                 switch (messageType) {
                     case 1:
-                        if(inputData.containsKey("msgContent") && inputData.get("msgContent") instanceof  String){
-                            System.out.println(inputData.get("msgContent").toString());
-                        }
-
+                        final String username = inputData.get("username").toString();
+                        final String password = inputData.get("password").toString();
+                        User user = new User(username, password);
+                        oos.println(new UserDao().register(user));
                         break;
                 }
             }
 
-//            if (inputData.get("type") != null) {
-//                int type = Integer.parseInt(inputData.get("type").toString());
-//                if (type == 1) {
-//                    String msg = username + " disconnected with a LOGOUT message";
-//                    System.out.println(msg);
-//                    dispatchPublicMessage(msg);
-//                    break;
-//                } else {
-//                    String message = inputData.get("message").toString();
-//                    dispatchPublicMessage(message);
-//                }
-//            }
         }
 
         try {
@@ -110,7 +100,7 @@ public class ClientConnection extends Thread {
 
 
     //Done
-    //TODO i see you have delegated the closing to this class but you are not using it in the Server implementation
+    //TODO i see you have delegated the closing to this class but you are not using it in the com.mychatserver.server.Server implementation
 
     private void close() throws IOException {
         conn.close();
