@@ -1,5 +1,6 @@
 package com.mychatserver.server;
 
+import com.mychatserver.db.DbConnection;
 import com.mychatserver.db.UserDao;
 import com.mychatserver.entity.User;
 import org.json.simple.JSONObject;
@@ -32,6 +33,7 @@ public class ClientConnection extends Thread {
         try {
             oos = new PrintWriter(conn.getOutputStream(), true);
             ois = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            DbConnection.getInstance().getConnection();
 
             //Done
             //TODO this introduces a high coupling between client and server, server needs to know about client but not vice versa.
@@ -71,13 +73,15 @@ public class ClientConnection extends Thread {
 
             if (inputData.containsKey("msgType")) {
                 int messageType = Integer.parseInt(inputData.get("msgType").toString());
+                User user = new User(inputData.get("username").toString(), inputData.get("password").toString());
                 switch (messageType) {
                     case 1:
-                        final String username = inputData.get("username").toString();
-                        final String password = inputData.get("password").toString();
-                        User user = new User(username, password);
-                        oos.println(new UserDao().register(user));
+                        oos.println(new UserDao().registerUser(user));
                         break;
+                    case 2:
+                        oos.println(new UserDao().authenticate(user));
+                        break;
+
                 }
             }
 
@@ -103,6 +107,7 @@ public class ClientConnection extends Thread {
     //TODO i see you have delegated the closing to this class but you are not using it in the com.mychatserver.server.Server implementation
 
     private void close() throws IOException {
+        DbConnection.getInstance().closeConnection();
         conn.close();
     }
 

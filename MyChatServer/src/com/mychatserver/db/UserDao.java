@@ -1,12 +1,14 @@
 package com.mychatserver.db;
 
 import com.mychatserver.entity.User;
+import com.mychatserver.enums.*;
+import com.mychatserver.enums.Error;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 /**
- * Created by ciprian.mare on 3/19/2015.
+ * Created by ciprian.mare on 3/20/2015.
  */
 public class UserDao {
 
@@ -15,11 +17,11 @@ public class UserDao {
      * @param user
      * @return
      *
-     * check if a user is already registered and if not register, return a message for client
+     * check if a user is already registered and if not registerUser, return a message for client
      */
-    public String register(final User user){
+    public String registerUser(final User user){
         if(isRegistered(user.getUsername())){
-            return "user is already registered";
+            return com.mychatserver.enums.Error.USER_EXIST.toString();
         }
 
         try{
@@ -29,9 +31,11 @@ public class UserDao {
             stmt.executeUpdate();
             stmt.close();
         } catch (Exception e){
+            e.printStackTrace();
+            return com.mychatserver.enums.Error.COMMON_ERROR.toString();
 
         }
-        return "user registered";
+        return Error.NO_ERROR.toString();
     }
 
     /**
@@ -39,7 +43,7 @@ public class UserDao {
      * @param username
      * @return
      */
-    public boolean isRegistered(final String username){
+    private boolean isRegistered(final String username){
         boolean bRet = false;
 
         try {
@@ -47,7 +51,7 @@ public class UserDao {
             stmt.setString(1, username);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-               bRet = true;
+                bRet = true;
             }
             rs.close();
             stmt.close();
@@ -55,5 +59,33 @@ public class UserDao {
             e.printStackTrace();
         }
         return bRet;
+    }
+
+    /**
+     *
+     * @param user
+     * @return
+     */
+    public String authenticate(User user) {
+        if(!isRegistered(user.getUsername())){
+            return Error.USER_NOT_EXIST.toString();
+        }
+
+        try{
+            final PreparedStatement stmt = DbConnection.getInstance().getConnection().prepareStatement("SELECT * FROM tbl_users WHERE username = ? and password = ?");
+            stmt.setString(1, user.getUsername());
+            stmt.setString(2, user.getPassword());
+            ResultSet rs = stmt.executeQuery();
+            if (!rs.next()) {
+                return Error.BAD_CREDENTIALS.toString();
+            }
+            rs.close();
+            stmt.close();
+        } catch (Exception e){
+            e.printStackTrace();
+            return Error.COMMON_ERROR.toString();
+
+        }
+        return Error.NO_ERROR.toString();
     }
 }
