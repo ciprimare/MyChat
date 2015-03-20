@@ -1,6 +1,5 @@
 package com.mychatserver.server;
 
-import com.mychatserver.db.DbConnection;
 import com.mychatserver.db.UserDao;
 import com.mychatserver.entity.User;
 import org.json.simple.JSONObject;
@@ -80,7 +79,10 @@ public class ClientConnection extends Thread {
                     case 2:
                         oos.println(new UserDao().authenticate(user));
                         break;
-
+                    case 3:
+                        String message = inputData.get("message").toString();
+                        dispatchPublicMessage(user.getUsername() + ":" + message);
+                        break;
                 }
             }
 
