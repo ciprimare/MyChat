@@ -35,7 +35,7 @@ public class DbConnection {
     private void connect(){
         try {
             Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:D://mychat.db");
+            connection = DriverManager.getConnection("jdbc:sqlite:D://work//projects//MyChat//MyChatServer//db//mychat.db");
         } catch ( Exception e ) {
             System.err.println( e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
