@@ -1,5 +1,7 @@
 package com.mychatserver.server;
 
+import com.mychatserver.db.DbConnection;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -27,6 +29,7 @@ public class Server implements ClientConnection.ClientConnectionListener {
         try {
             serverSocket = new ServerSocket(port);
             System.out.println("Chat com.mychatserver.server.Server waiting for clients on port [" + port + "]");
+            DbConnection.getInstance().getConnection();
             while (true) {
                 Socket newConnection = serverSocket.accept();
                 System.out.println("New client: " + newConnection.getInetAddress());
@@ -69,6 +72,7 @@ public class Server implements ClientConnection.ClientConnectionListener {
                 }
             }
             try {
+                DbConnection.getInstance().closeConnection();
                 serverSocket.close();
                 System.out.println("Chat server stopped.");
             } catch (IOException e) {

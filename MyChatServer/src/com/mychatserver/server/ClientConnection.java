@@ -33,7 +33,6 @@ public class ClientConnection extends Thread {
         try {
             oos = new PrintWriter(conn.getOutputStream(), true);
             ois = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            DbConnection.getInstance().getConnection();
 
             //Done
             //TODO this introduces a high coupling between client and server, server needs to know about client but not vice versa.
@@ -107,7 +106,6 @@ public class ClientConnection extends Thread {
     //TODO i see you have delegated the closing to this class but you are not using it in the com.mychatserver.server.Server implementation
 
     private void close() throws IOException {
-        DbConnection.getInstance().closeConnection();
         conn.close();
     }
 
