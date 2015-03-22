@@ -1,19 +1,19 @@
 package com.mychatserver.entity;
 
 /**
- * Created by cc on 3/22/2015.
+ * Created by ciprian.mare on 3/22/2015.
  */
 public class PublicMessage {
-    private int clientId;
+    private int senderId;
     private String message;
 
     public PublicMessage(int clientId, String message) {
-        this.clientId = clientId;
+        this.senderId = clientId;
         this.message = message;
     }
 
-    public int getClientId() {
-        return clientId;
+    public int getSenderId() {
+        return senderId;
     }
 
     public String getMessage() {

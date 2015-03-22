@@ -139,7 +139,7 @@ public class Server implements ClientConnection.ClientConnectionListener {
             try {
                 PublicMessage publicMessage = messageQueue.take();
                 for (ClientConnection clientConnection : allConnectedClients) {
-                    if (clientConnection.getClientId() != publicMessage.getClientId()) {
+                    if (clientConnection.getClientId() != publicMessage.getSenderId()) {
                         clientConnection.sendMessage(publicMessage.getMessage());
                     }
                 }
