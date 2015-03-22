@@ -5,11 +5,11 @@ import java.io.Serializable;
 /**
  * Created by ciprian.mare on 3/20/2015.
  */
-public class User {
+public class Client {
     private String username;
     private String password;
 
-    public User(String username, String password) {
+    public Client(String username, String password) {
         this.username = username;
         this.password = password;
     }

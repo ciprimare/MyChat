@@ -1,8 +1,8 @@
 package com.mychatserver.server;
 
-import com.mychatserver.db.UserDao;
+import com.mychatserver.db.ClientDao;
+import com.mychatserver.entity.Client;
 import com.mychatserver.entity.PublicMessage;
-import com.mychatserver.entity.User;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -68,17 +68,20 @@ public class ClientConnection extends Thread {
 
             if (inputData.containsKey("msgType")) {
                 int messageType = Integer.parseInt(inputData.get("msgType").toString());
-                User user = new User(inputData.get("username").toString(), inputData.get("password").toString());
+                Client client = new Client(inputData.get("username").toString(), inputData.get("password").toString());
                 switch (messageType) {
+                    case 0:
+                        dispatchClientDisconnected(client);
+                        break;
                     case 1:
-                        oos.println(new UserDao().registerUser(user));
+                        oos.println(new ClientDao().register(client));
                         break;
                     case 2:
-                        oos.println(new UserDao().authenticate(user));
+                        oos.println(new ClientDao().authenticate(client));
                         break;
                     case 3:
                         String message = inputData.get("message").toString();
-                        dispatchPublicMessage(new PublicMessage(clientId, user.getUsername() + ":" + message));
+                        dispatchPublicMessage(new PublicMessage(clientId, client.getUsername() + ":" + message));
                         break;
                 }
             }
@@ -90,7 +93,6 @@ public class ClientConnection extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        dispatchClientDisconnected();
     }
 
     public void sendMessage(String message) {
@@ -108,6 +110,11 @@ public class ClientConnection extends Thread {
         conn.close();
     }
 
+    /**
+     *
+     * @param jsonString
+     * @return
+     */
     private JSONObject parseJSON(String jsonString) {
         JSONParser parser = new JSONParser();
         JSONObject result = new JSONObject();
@@ -121,15 +128,22 @@ public class ClientConnection extends Thread {
         return result;
     }
 
+    /**
+     * @param publicMessage
+     */
     private void dispatchPublicMessage(final PublicMessage publicMessage) {
         if (listener != null) {
             listener.onDispatchPublicMessage(publicMessage);
         }
     }
 
-    private void dispatchClientDisconnected() {
+    /**
+     *
+     * @param client
+     */
+    private void dispatchClientDisconnected(final Client client) {
         if (listener != null) {
-            listener.onClientDisconnected(this);
+            listener.onClientDisconnected(client, clientId);
         }
     }
 
@@ -137,8 +151,11 @@ public class ClientConnection extends Thread {
         this.listener = listener;
     }
 
+    /**
+     *
+     */
     public interface ClientConnectionListener {
-        public void onClientDisconnected(ClientConnection clientConnection);
+        public void onClientDisconnected(Client client, int clientId);
 
         public void onDispatchPublicMessage(PublicMessage publicMessage);
     }

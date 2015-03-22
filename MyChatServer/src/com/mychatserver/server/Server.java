@@ -1,12 +1,14 @@
 package com.mychatserver.server;
 
 import com.mychatserver.db.DbConnection;
+import com.mychatserver.entity.Client;
 import com.mychatserver.entity.PublicMessage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -85,13 +87,32 @@ public class Server implements ClientConnection.ClientConnectionListener {
         }
     }
 
+    /**
+     * for a client who logoff using the LOGOUT message
+     *
+     * @param client
+     * @param clientId
+     */
     @Override
-    public void onClientDisconnected(ClientConnection clientConnection) {
-        remove(clientConnection);
+    public void onClientDisconnected(Client client, int clientId) {
+        //Done
+        //TODO this is another cross dependency introduced between server and client, to not do
+        // this you may want to implement and observer pattern to have the server listen for end of
+        // communication events from the clients and have the com.mychatserver.server.Server do the removing of the client as needed
+        // this is called DEPENDENCY INVERSION and it is an important concept of SOLID architectures
+
+        Iterator<ClientConnection> iterator = allConnectedClients.iterator();
+        while (iterator.hasNext()) {
+            ClientConnection clientConnection = iterator.next();
+            if(clientConnection.getClientId() == clientId){
+                iterator.remove();
+                System.out.println(client.getUsername() + ": disconnected with a logout message");
+            }
+        }
+
     }
 
     /**
-     *
      * @param publicMessage
      */
     @Override
@@ -107,20 +128,6 @@ public class Server implements ClientConnection.ClientConnectionListener {
         }
     }
 
-
-    /**
-     * for a client who logoff using the LOGOUT message
-     * @param clientConnection
-     */
-    private void remove(ClientConnection clientConnection) {
-        //Done
-        //TODO this is another cross dependency introduced between server and client, to not do
-        // this you may want to implement and observer pattern to have the server listen for end of
-        // communication events from the clients and have the com.mychatserver.server.Server do the removing of the client as needed
-        // this is called DEPENDENCY INVERSION and it is an important concept of SOLID architectures
-        allConnectedClients.remove(clientConnection);
-        System.out.println("client removed from connected clients list");
-    }
 
     private class PublicMessageSender implements Runnable {
 
