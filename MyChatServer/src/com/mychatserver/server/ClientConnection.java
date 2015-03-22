@@ -1,6 +1,7 @@
 package com.mychatserver.server;
 
 import com.mychatserver.db.UserDao;
+import com.mychatserver.entity.PublicMessage;
 import com.mychatserver.entity.User;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -18,7 +19,7 @@ public class ClientConnection extends Thread {
     private PrintWriter oos;
     private BufferedReader ois;
     private JSONObject inputData;
-    private String username;
+    private int clientId;
 
     private ClientConnectionListener listener;
 
@@ -26,9 +27,9 @@ public class ClientConnection extends Thread {
     //TODO maybe rename this class to something like client connection because it may be confusing,
     // it does not represent a client but the server side end of a client communications pipe
 
-    public ClientConnection(final Socket conn) {
+    public ClientConnection(final Socket conn, int clientId) {
         this.conn = conn;
-
+        this.clientId = clientId;
         try {
             oos = new PrintWriter(conn.getOutputStream(), true);
             ois = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -37,8 +38,6 @@ public class ClientConnection extends Thread {
             //TODO this introduces a high coupling between client and server, server needs to know about client but not vice versa.
             // the connection ID could just as easily have been passed as a constructor parameter
 
-            //inputData = parseJSON(ois.readLine());
-            //username = inputData.get("username").toString();
         } catch (IOException e) {
             System.out.println(e.getMessage());
             return;
@@ -51,8 +50,6 @@ public class ClientConnection extends Thread {
         //TODO you just keep trying to read forever from a client connection that may have been force closed already
         // you should handle not just the happy flow where client disconnects with LOGOUT,
         // but also the error case where the connection gets broken
-
-        //dispatchPublicMessage(username + " just connected.");
 
         while (true) {
             try {
@@ -81,7 +78,7 @@ public class ClientConnection extends Thread {
                         break;
                     case 3:
                         String message = inputData.get("message").toString();
-                        dispatchPublicMessage(user.getUsername() + ":" + message);
+                        dispatchPublicMessage(new PublicMessage(clientId, user.getUsername() + ":" + message));
                         break;
                 }
             }
@@ -124,9 +121,9 @@ public class ClientConnection extends Thread {
         return result;
     }
 
-    private void dispatchPublicMessage(final String message) {
+    private void dispatchPublicMessage(final PublicMessage publicMessage) {
         if (listener != null) {
-            listener.onDispatchPublicMessage(message);
+            listener.onDispatchPublicMessage(publicMessage);
         }
     }
 
@@ -143,9 +140,14 @@ public class ClientConnection extends Thread {
     public interface ClientConnectionListener {
         public void onClientDisconnected(ClientConnection clientConnection);
 
-        public void onDispatchPublicMessage(String message);
+        public void onDispatchPublicMessage(PublicMessage publicMessage);
     }
 
     //Done
     //TODO some of these getters are not necesarry, this is not a java Bean class after all
+
+
+    public int getClientId() {
+        return clientId;
+    }
 }

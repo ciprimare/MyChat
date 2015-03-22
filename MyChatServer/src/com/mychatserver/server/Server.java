@@ -1,6 +1,7 @@
 package com.mychatserver.server;
 
 import com.mychatserver.db.DbConnection;
+import com.mychatserver.entity.PublicMessage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -10,30 +11,32 @@ import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
+
 public class Server implements ClientConnection.ClientConnectionListener {
 
     private List<ClientConnection> allConnectedClients;
     private int port;
     private ServerSocket serverSocket;
-    private BlockingDeque<String> messageQueue;
+    private BlockingDeque<PublicMessage> messageQueue;
     private Thread publicMessageSenderThread;
+    private int clientId;
 
     public Server(int port) {
         this.port = port;
         allConnectedClients = new ArrayList<ClientConnection>();
-        messageQueue = new LinkedBlockingDeque<String>();
+        messageQueue = new LinkedBlockingDeque<PublicMessage>();
     }
 
     public void start() {
 
         try {
             serverSocket = new ServerSocket(port);
-            System.out.println("Chat com.mychatserver.server.Server waiting for clients on port [" + port + "]");
+            System.out.println("Chat server waiting for clients on port [" + port + "]");
             DbConnection.getInstance().getConnection();
             while (true) {
                 Socket newConnection = serverSocket.accept();
                 System.out.println("New client: " + newConnection.getInetAddress());
-                ClientConnection client = new ClientConnection(newConnection);
+                ClientConnection client = new ClientConnection(newConnection, ++clientId);
                 client.setClientConnectionListener(this);
                 allConnectedClients.add(client);
                 client.start();
@@ -87,10 +90,14 @@ public class Server implements ClientConnection.ClientConnectionListener {
         remove(clientConnection);
     }
 
+    /**
+     *
+     * @param publicMessage
+     */
     @Override
-    public void onDispatchPublicMessage(String message) {
+    public void onDispatchPublicMessage(final PublicMessage publicMessage) {
         try {
-            messageQueue.put(message);
+            messageQueue.put(publicMessage);
             if (publicMessageSenderThread == null) {
                 publicMessageSenderThread = new Thread(new PublicMessageSender());
                 publicMessageSenderThread.start();
@@ -101,7 +108,10 @@ public class Server implements ClientConnection.ClientConnectionListener {
     }
 
 
-    // for a client who logoff using the LOGOUT message
+    /**
+     * for a client who logoff using the LOGOUT message
+     * @param clientConnection
+     */
     private void remove(ClientConnection clientConnection) {
         //Done
         //TODO this is another cross dependency introduced between server and client, to not do
@@ -112,7 +122,8 @@ public class Server implements ClientConnection.ClientConnectionListener {
         System.out.println("client removed from connected clients list");
     }
 
-    private class PublicMessageSender implements Runnable{
+    private class PublicMessageSender implements Runnable {
+
 
         @Override
         public void run() {
@@ -121,11 +132,16 @@ public class Server implements ClientConnection.ClientConnectionListener {
             }
         }
 
+        /**
+         *
+         */
         private void sendPublicMessages() {
             try {
-                String message = messageQueue.take();
+                PublicMessage publicMessage = messageQueue.take();
                 for (ClientConnection clientConnection : allConnectedClients) {
-                    clientConnection.sendMessage(message);
+                    if (clientConnection.getClientId() != publicMessage.getClientId()) {
+                        clientConnection.sendMessage(publicMessage.getMessage());
+                    }
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
